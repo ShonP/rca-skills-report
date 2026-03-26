@@ -336,6 +336,15 @@ TestResultView
 | C | **Concise skill** | `exp-c-concise` | Trimmed anomaly skill to core pattern only (removed gap filling, interpreting, threshold sections) |
 | E | **Merged skills** | `exp-e-merged` | Combined anomaly + change-point into single `rca-time-series-analysis` skill |
 
+### Pipeline Runs
+
+| Experiment | Baseline | MCP Skills | Native Skills |
+|---|---|---|---|
+| **A+D: All Skills** | [158193118](https://msazure.visualstudio.com/b32aa71e-8ed2-41b2-9d77-5bc261222004/_build/results?buildId=158193118) | [158208651](https://dev.azure.com/msazure/One/_build/results?buildId=158208651) | [158208699](https://dev.azure.com/msazure/One/_build/results?buildId=158208699) |
+| **B: No Hints** | [158193388](https://msazure.visualstudio.com/b32aa71e-8ed2-41b2-9d77-5bc261222004/_build/results?buildId=158193388) | [158193434](https://msazure.visualstudio.com/b32aa71e-8ed2-41b2-9d77-5bc261222004/_build/results?buildId=158193434) | [158193456](https://msazure.visualstudio.com/b32aa71e-8ed2-41b2-9d77-5bc261222004/_build/results?buildId=158193456) |
+| **C: Concise** | [158208815](https://dev.azure.com/msazure/One/_build/results?buildId=158208815) | [158208865](https://dev.azure.com/msazure/One/_build/results?buildId=158208865) | [158208895](https://dev.azure.com/msazure/One/_build/results?buildId=158208895) |
+| **E: Merged** | [158201914](https://dev.azure.com/msazure/One/_build/results?buildId=158201914) | [158201948](https://dev.azure.com/msazure/One/_build/results?buildId=158201948) | [158201981](https://dev.azure.com/msazure/One/_build/results?buildId=158201981) |
+
 ### Overall RCA Accuracy
 
 ![Overall RCA Accuracy by Experiment](chart1_overall_rca.png)
