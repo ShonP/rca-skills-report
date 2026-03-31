@@ -224,6 +224,35 @@ The DiffPatterns regression is **NOT** caused by turn budget competition. The ac
 
 **The real question is not "why does DiffPatterns regress?" but "do the 23 tests that skip DiffPatterns still produce good RCAs?"** — the overall RCAJudge improvement (+0.6pp) suggests they mostly do.
 
+#### 5.5.5 First LLM Call Latency: Does LoadSkill Add Overhead?
+
+A common concern: does the agent's first decision (which includes choosing to call `LoadSkill`) add meaningful latency? The first LLM call is the "planning" turn where the agent reads the prompt and decides its first action.
+
+**First LLM call duration (p50) across all model configs:**
+
+| Model Config | Baseline | MCP Skills | Native Skills | MCP Skills Overhead |
+|---|---|---|---|---|
+| **gpt-5.4 (no reasoning)** | 7.6s | 8.9s | 7.8s | **+1.3s** (+17%) |
+| **gpt-5.1 (reasoning)** | 16.7s | 19.6s | 20.5s | **+2.9s** (+17%) |
+| **gpt-5.4 + reasoning** | 16.1s | 16.5s | 16.1s | **+0.4s** (+2%) |
+
+**What tool does the first LLM call choose?**
+
+| Model Config | MCP Skills: LoadSkill first | MCP Skills: ExecuteKQL first |
+|---|---|---|
+| **gpt-5.4 (no reasoning)** | 55/66 (83%) | 11/66 (17%) |
+| **gpt-5.1 (reasoning)** | 47/66 (71%) | 19/66 (29%) |
+| **gpt-5.4 + reasoning** | 42/66 (64%) | 24/66 (36%) |
+
+**Key observations:**
+
+1. **LoadSkill adds only ~1.3s to the first call** for gpt-5.4 no-reasoning (8.9s vs 7.6s). Given total test time of 81s, this is **1.6% of total execution** — negligible.
+2. **Native Skills has a larger first-call overhead on gpt-5.1** (+3.8s, from 16.7s to 20.5s) because the injected skill content increases the system prompt token count that the LLM must process. MCP Skills is actually cheaper here (+2.9s) since it only shows the skill *name* in the prompt, not the full content.
+3. **With gpt-5.4+reasoning, the overhead is near zero** (+0.4s). The reasoning computation dominates, making the skill-related tokens negligible.
+4. **Reasoning models load skills less eagerly** — only 64-71% start with LoadSkill vs 83% for no-reasoning. Reasoning models more often start with `ExecuteKQLQueryTool` first (exploring the data) and load skills later in the flow.
+
+**Bottom line:** The LoadSkill first-call cost (~1.3s) is trivially small compared to the 10-25s the agent saves overall through more efficient execution. The first LLM call is not a latency concern.
+
 ### 5.6 Reasoning Fixes the Turn Budget Issue
 
 Enabling reasoning on gpt-5.4 (effort: medium, summary: detailed) dramatically changes behavior:
