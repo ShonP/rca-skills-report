@@ -57,6 +57,37 @@ gpt54_reason = {
 
 gpt54_reason_latency = {'Baseline': 53.3, 'MCP Skills': 60.4, 'Native Skills': 56.1}
 
+# === Agent Behavior Data (from Python AssistantPipelineAgentLogs) ===
+agent_behavior = {
+    'gpt54_noReason': {
+        'p50_agent_sec': {'Baseline': 92.0, 'MCP Skills': 81.3, 'Native Skills': 88.1},
+        'avg_agent_sec': {'Baseline': 127.6, 'MCP Skills': 81.7, 'Native Skills': 87.5},
+        'p50_llm_turns': {'Baseline': 8, 'MCP Skills': 6, 'Native Skills': 7},
+        'tools_per_turn': {'Baseline': 1.80, 'MCP Skills': 2.33, 'Native Skills': 2.20},
+        'parallel_pct': {'Baseline': 63.0, 'MCP Skills': 70.4, 'Native Skills': 69.8},
+        'diffpatterns_pct': {'Baseline': 97.4, 'MCP Skills': 84.8, 'Native Skills': 89.4},
+        'errors_per_test': {'Baseline': 0.57, 'MCP Skills': 0.30, 'Native Skills': 0.44},
+    },
+    'gpt51_reason': {
+        'p50_agent_sec': {'Baseline': 242.4, 'MCP Skills': 221.7, 'Native Skills': 222.2},
+        'avg_agent_sec': {'Baseline': 237.1, 'MCP Skills': 223.5, 'Native Skills': 227.3},
+        'p50_llm_turns': {'Baseline': 12, 'MCP Skills': 12, 'Native Skills': 13},
+        'tools_per_turn': {'Baseline': 1.15, 'MCP Skills': 1.29, 'Native Skills': 1.24},
+        'parallel_pct': {'Baseline': 19.8, 'MCP Skills': 23.8, 'Native Skills': 23.7},
+        'diffpatterns_pct': {'Baseline': 100, 'MCP Skills': 98.5, 'Native Skills': 100},
+        'errors_per_test': {'Baseline': 0.74, 'MCP Skills': 0.56, 'Native Skills': 0.33},
+    },
+    'gpt54_reason': {
+        'p50_agent_sec': {'Baseline': 314.8, 'MCP Skills': 322.5, 'Native Skills': 339.5},
+        'avg_agent_sec': {'Baseline': 312.6, 'MCP Skills': 325.5, 'Native Skills': 343.6},
+        'p50_llm_turns': {'Baseline': 15, 'MCP Skills': 15, 'Native Skills': 18},
+        'tools_per_turn': {'Baseline': 1.51, 'MCP Skills': 1.79, 'Native Skills': 1.61},
+        'parallel_pct': {'Baseline': 33.9, 'MCP Skills': 43.8, 'Native Skills': 34.7},
+        'diffpatterns_pct': {'Baseline': 98.6, 'MCP Skills': 95.5, 'Native Skills': 98.5},
+        'errors_per_test': {'Baseline': 0.96, 'MCP Skills': 1.29, 'Native Skills': 1.58},
+    },
+}
+
 # === Section 10: Experiments A-E (gpt-5.4 + reasoning) ===
 original = gpt54_reason
 
@@ -372,6 +403,197 @@ def chart5_mcp_skills_wins():
     _save(fig, 'chart5_mcp_skills_trend.png')
 
 
+# ======================================================================
+# Agent Behavior Charts (from Python Logs)
+# ======================================================================
+
+CONFIG_LABELS = {
+    'gpt54_noReason': 'gpt-5.4\n(no reasoning)',
+    'gpt51_reason': 'gpt-5.1\n(reasoning)',
+    'gpt54_reason': 'gpt-5.4\n(+reasoning)',
+}
+CONFIG_ORDER = ['gpt54_noReason', 'gpt51_reason', 'gpt54_reason']
+
+
+def chart_agent_duration():
+    """Bar chart: agent duration (p50) across all model configs."""
+    fig, ax = plt.subplots(figsize=(10, 6))
+    x = np.arange(len(CONFIG_ORDER))
+    width = 0.25
+    for i, flow in enumerate(FLOWS):
+        vals = [agent_behavior[c]['p50_agent_sec'][flow] for c in CONFIG_ORDER]
+        bars = ax.bar(x + i * width, vals, width, label=flow, color=COLORS[flow], edgecolor='white')
+        for bar, val in zip(bars, vals):
+            ax.text(bar.get_x() + bar.get_width() / 2., bar.get_height() + 3,
+                    f'{val:.0f}s', ha='center', va='bottom', fontsize=8, fontweight='bold')
+    ax.set_ylabel('Agent Duration p50 (seconds)', fontsize=12)
+    ax.set_title('Per-Test Agent Execution Time (from Python Logs)', fontsize=14, fontweight='bold')
+    ax.set_xticks(x + width)
+    ax.set_xticklabels([CONFIG_LABELS[c] for c in CONFIG_ORDER], fontsize=10)
+    ax.legend(fontsize=10)
+    ax.grid(axis='y', alpha=0.3)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    _save(fig, 'chart_agent_duration.png')
+
+
+def chart_agent_efficiency():
+    """2-panel: Tools per turn + Parallel batch % across configs."""
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5))
+
+    x = np.arange(len(CONFIG_ORDER))
+    width = 0.25
+
+    for i, flow in enumerate(FLOWS):
+        vals = [agent_behavior[c]['tools_per_turn'][flow] for c in CONFIG_ORDER]
+        bars = ax1.bar(x + i * width, vals, width, label=flow, color=COLORS[flow], edgecolor='white')
+        for bar, val in zip(bars, vals):
+            ax1.text(bar.get_x() + bar.get_width() / 2., bar.get_height() + 0.02,
+                     f'{val:.2f}', ha='center', va='bottom', fontsize=8, fontweight='bold')
+    ax1.set_ylabel('Tools per LLM Turn', fontsize=11)
+    ax1.set_title('Tool Batching Efficiency', fontsize=12, fontweight='bold')
+    ax1.set_xticks(x + width)
+    ax1.set_xticklabels([CONFIG_LABELS[c] for c in CONFIG_ORDER], fontsize=9)
+    ax1.legend(fontsize=9)
+    ax1.set_ylim(0, 2.8)
+    ax1.grid(axis='y', alpha=0.3)
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+
+    for i, flow in enumerate(FLOWS):
+        vals = [agent_behavior[c]['parallel_pct'][flow] for c in CONFIG_ORDER]
+        bars = ax2.bar(x + i * width, vals, width, label=flow, color=COLORS[flow], edgecolor='white')
+        for bar, val in zip(bars, vals):
+            ax2.text(bar.get_x() + bar.get_width() / 2., bar.get_height() + 0.5,
+                     f'{val:.0f}%', ha='center', va='bottom', fontsize=8, fontweight='bold')
+    ax2.set_ylabel('Parallel Tool Batch %', fontsize=11)
+    ax2.set_title('Parallel Tool Execution Rate', fontsize=12, fontweight='bold')
+    ax2.set_xticks(x + width)
+    ax2.set_xticklabels([CONFIG_LABELS[c] for c in CONFIG_ORDER], fontsize=9)
+    ax2.set_ylim(0, 85)
+    ax2.grid(axis='y', alpha=0.3)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+
+    fig.suptitle('Agent Execution Efficiency (from Python Logs)', fontsize=14, fontweight='bold', y=1.02)
+    plt.tight_layout()
+    _save(fig, 'chart_agent_efficiency.png')
+
+
+def chart_agent_errors():
+    """Bar chart: KQL failures per test across configs."""
+    fig, ax = plt.subplots(figsize=(10, 6))
+    x = np.arange(len(CONFIG_ORDER))
+    width = 0.25
+    for i, flow in enumerate(FLOWS):
+        vals = [agent_behavior[c]['errors_per_test'][flow] for c in CONFIG_ORDER]
+        bars = ax.bar(x + i * width, vals, width, label=flow, color=COLORS[flow], edgecolor='white')
+        for bar, val in zip(bars, vals):
+            ax.text(bar.get_x() + bar.get_width() / 2., bar.get_height() + 0.02,
+                    f'{val:.2f}', ha='center', va='bottom', fontsize=8, fontweight='bold')
+    ax.set_ylabel('Avg KQL Failures per Test', fontsize=12)
+    ax.set_title('Tool Execution Failures (from Python Logs)', fontsize=14, fontweight='bold')
+    ax.set_xticks(x + width)
+    ax.set_xticklabels([CONFIG_LABELS[c] for c in CONFIG_ORDER], fontsize=10)
+    ax.legend(fontsize=10)
+    ax.set_ylim(0, 2.0)
+    ax.grid(axis='y', alpha=0.3)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    _save(fig, 'chart_agent_errors.png')
+
+
+def chart_executive_summary():
+    """Combined accuracy + agent behavior for the executive summary."""
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5.5))
+
+    accuracy_data = {
+        'Anomaly\nDetection': {'Baseline': 65.9, 'MCP Skills': 73.0, 'Native Skills': 71.8},
+        'DiffPatterns': {'Baseline': 62.4, 'MCP Skills': 58.8, 'Native Skills': 60.5},
+        'Overall\nRCA': {'Baseline': 70.5, 'MCP Skills': 71.3, 'Native Skills': 71.3},
+    }
+    metrics_list = list(accuracy_data.keys())
+    x = np.arange(len(metrics_list))
+    width = 0.25
+    ax = axes[0]
+    for i, flow in enumerate(FLOWS):
+        vals = [accuracy_data[m][flow] for m in metrics_list]
+        bars = ax.bar(x + i * width, vals, width, label=flow, color=COLORS[flow], edgecolor='white')
+        for bar, val in zip(bars, vals):
+            ax.text(bar.get_x() + bar.get_width() / 2., bar.get_height() + 0.3,
+                    f'{val:.1f}', ha='center', va='bottom', fontsize=8, fontweight='bold')
+    ax.set_ylabel('Accuracy (%)', fontsize=11)
+    ax.set_title('Test Results (Accuracy)', fontsize=12, fontweight='bold')
+    ax.set_xticks(x + width)
+    ax.set_xticklabels(metrics_list, fontsize=9)
+    ax.legend(fontsize=8, loc='lower left')
+    ax.set_ylim(50, 80)
+    ax.grid(axis='y', alpha=0.3)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    behavior_metrics = ['Agent\nDuration(p50)', 'LLM\nTurns(p50)', 'Tools\nper Turn']
+    ax = axes[1]
+    bl = agent_behavior['gpt54_noReason']
+    data_groups = [
+        [bl['p50_agent_sec'][f] for f in FLOWS],
+        [bl['p50_llm_turns'][f] * 10 for f in FLOWS],
+        [bl['tools_per_turn'][f] * 40 for f in FLOWS],
+    ]
+    raw_labels = [
+        [f"{bl['p50_agent_sec'][f]:.0f}s" for f in FLOWS],
+        [f"{bl['p50_llm_turns'][f]}" for f in FLOWS],
+        [f"{bl['tools_per_turn'][f]:.2f}" for f in FLOWS],
+    ]
+    x2 = np.arange(len(behavior_metrics))
+    for i, flow in enumerate(FLOWS):
+        vals = [data_groups[j][i] for j in range(len(behavior_metrics))]
+        bars = ax.bar(x2 + i * width, vals, width, color=COLORS[flow], edgecolor='white')
+        for j, (bar, val) in enumerate(zip(bars, vals)):
+            ax.text(bar.get_x() + bar.get_width() / 2., bar.get_height() + 1,
+                    raw_labels[j][i], ha='center', va='bottom', fontsize=8, fontweight='bold')
+    ax.set_title('Agent Behavior (Python Logs)', fontsize=12, fontweight='bold')
+    ax.set_xticks(x2 + width)
+    ax.set_xticklabels(behavior_metrics, fontsize=9)
+    ax.set_ylim(0, 120)
+    ax.set_yticks([])
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    err_metrics = ['KQL\nFailures/Test', 'Parallel\nBatch %']
+    ax = axes[2]
+    err_data = [
+        [bl['errors_per_test'][f] * 100 for f in FLOWS],
+        [bl['parallel_pct'][f] for f in FLOWS],
+    ]
+    err_labels = [
+        [f"{bl['errors_per_test'][f]:.2f}" for f in FLOWS],
+        [f"{bl['parallel_pct'][f]:.0f}%" for f in FLOWS],
+    ]
+    x3 = np.arange(len(err_metrics))
+    for i, flow in enumerate(FLOWS):
+        vals = [err_data[j][i] for j in range(len(err_metrics))]
+        bars = ax.bar(x3 + i * width, vals, width, color=COLORS[flow], edgecolor='white')
+        for j, (bar, val) in enumerate(zip(bars, vals)):
+            ax.text(bar.get_x() + bar.get_width() / 2., bar.get_height() + 0.5,
+                    err_labels[j][i], ha='center', va='bottom', fontsize=8, fontweight='bold')
+    ax.set_title('Efficiency (Python Logs)', fontsize=12, fontweight='bold')
+    ax.set_xticks(x3 + width)
+    ax.set_xticklabels(err_metrics, fontsize=9)
+    ax.set_ylim(0, 85)
+    ax.set_yticks([])
+    ax.grid(axis='y', alpha=0.3)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    fig.suptitle('gpt-5.4 (No Reasoning) — Combined View: Accuracy + Agent Behavior',
+                 fontsize=14, fontweight='bold', y=1.04)
+    plt.tight_layout()
+    _save(fig, 'chart_executive_summary.png')
+
+
 if __name__ == '__main__':
     # Section 2-3: gpt-5.4 no reasoning
     chart_s2_overall_accuracy()
@@ -381,6 +603,12 @@ if __name__ == '__main__':
     chart_cross_model()
     chart_cross_model_latency()
     chart_diffpatterns_regression()
+
+    # Agent behavior charts (from Python logs)
+    chart_agent_duration()
+    chart_agent_efficiency()
+    chart_agent_errors()
+    chart_executive_summary()
 
     # Section 10: Experiments
     chart1_overall_rca_accuracy()
