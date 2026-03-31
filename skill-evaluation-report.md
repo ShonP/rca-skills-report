@@ -641,3 +641,22 @@ agent
 6. **Experiment C (Concise) doesn't help** — Trimming the skill content didn't improve anything; the over-engagement hypothesis was wrong. The issue is structural (how Native Skills injects context) rather than content length.
 
 7. **Latency: ~270–340s per test** — Python agent logs show actual per-test durations of 277-307s (p50). Pipeline "AvgTestDuration" was ~290-340s. Native Skills is consistently the slowest flow (~307-311s p50), not just in latency but also in error rate.
+
+### Should We Merge the Anomaly Detection Skills?
+
+**No.** Experiment E tested exactly this — merging `anomaly-detection` + `change-point-detection` into a single `rca-time-series-analysis` skill. The results are clear:
+
+| Metric | Original (2 skills) MCP Skills | Merged (1 skill) MCP Skills | Delta |
+|---|---|---|---|
+| Anomaly Detection | 69.5% | 69.4% | -0.1pp |
+| DiffPatterns | 68.0% | 67.2% | -0.8pp |
+| **Overall RCA** | **71.5%** | 70.3% | **-1.2pp** |
+
+**Why merging hurts MCP Skills:**
+- The 2-skill setup lets the agent **control loading order** — it can load `anomaly-detection` first, evaluate results, and only load `change-point-detection` if needed. Merging removes this optionality.
+- A single large skill block triggers **over-engagement** — the agent receives all techniques at once and tries to apply them all, instead of checking whether the first technique already found the root cause.
+- The merged skill doesn't improve anomaly detection (69.4% vs 69.5%), so there's no upside.
+
+**Counterpoint — Baseline improves with merged:** The merged experiment's baseline jumped to 71.8% (the highest single-flow score across all experiments). This is likely because merging simplified the system prompt for the no-skill flow. But this benefit doesn't extend to the skills flows.
+
+**Recommendation:** Keep skills separate. The on-demand, selective loading is a feature, not overhead.
